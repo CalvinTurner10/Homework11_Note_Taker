@@ -23,4 +23,18 @@ app.get('*', (req,res) =>
 res.sendFile(path.join(_dirname, 'public/index.html'))
 );
 
-app
+app.post('/api/notes', (req,res) =>{
+    if (req.body) {
+        let note = req.body;
+        console.log(req.body);
+        note.id = uuidv4();
+        db.push(note);
+        fs.writeFile('./db/db.json', JSON.stringify(db), (err,data) =>{
+            if (err) {
+                console.log ('Data is : + data');
+                throw err;
+            }
+        });
+        res.status(200).json(note);
+    }
+});
