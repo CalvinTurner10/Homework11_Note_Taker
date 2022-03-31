@@ -4,7 +4,7 @@ const fs = require("fs");
 const { v4: uuidv4 } = require('uuid');
 const {response} = require('express');
 const {ok} = require('assert');
-const store = require('../db/store')
+
 
 // GET "/api/notes" responds with all notes from the database
 router.get('/notes', (req, res) => {
