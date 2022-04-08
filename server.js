@@ -1,17 +1,108 @@
-const express = require('express');
-const apiRoutes = require('./routes/apiRoutes');
-const htmlRoutes = require('./routes/htmlRoutes');
-
-// Initialize the app and create a port
+const fs = require ('fs');
+const express = require ('express');
+const notesArray = require ('./db/mynotes.json');
+const { v4: uuidv4 } = require('uuid');
 const app = express();
 const PORT = process.env.PORT || 3001;
+const path = require ('path');
+const util = require ('util');
+const res = require('express/lib/response');
 
-// Set up body parsing, static, and route middleware
+app.use(express.urlencoded({extended: true}));
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static('public'));
-app.use('/api', apiRoutes);
-app.use('/', htmlRoutes);
 
-// Start the server on the port
-app.listen(PORT, () => console.log(`Listening on PORT: ${PORT}`));
+app.use(express.static('public'))
+
+//Get reqest
+
+
+app.get('/notes', (req, res) => 
+    res.sendFile(path.join(__dirname, 'public/notes.html'))
+);
+
+app.get('/api/notes', (req, res) => {
+    console.info(`${req.method} request received to get notes`)
+    readFromFile('./db/notesArray.json').then((data) => res.json(JSON.parse(data)))
+});
+
+app.get('*', (req, res) => 
+    res.sendFile(path.join(__dirname, 'public/notes.html'))
+);
+
+
+
+app.post('/api/notes', (req, res) => {
+        console.info(`${req.method} request received to add new notes`)
+        
+       //prep response to client
+    
+    
+    let response;
+
+    const {title, text} = req.body;
+        
+    if (req.body && req.body.title) {
+        const newNotes = {
+            title,
+            text,
+            id: uuidv4(),
+        };
+       
+        readAndAppend(newNotes, './db/mynotes.json');
+        res.status(201).json(`The note for ${req.body.title} has been created`);
+        }else{
+            res.status(500).json('Error in adding new note');
+        }
+            
+            response = {
+                status: 'success',
+                data: req.body,
+            };
+            
+            console.log(response);
+          
+            console.info(uuidv4());
+        console.log(req.body);
+});
+
+    
+app.delete('/api/notes/:id', (req, res) => {
+	console.info(' Now Deleting');
+	const noteId = req.params.id;
+	readFromFile('./db/mynotes.json')
+		.then((data) => JSON.parse(data))
+		.then((json) => {
+			
+			const result = json.filter((notesjs) => notesjs.id !== noteId);
+	
+			writeToFile('./db/mynotes.json', result);
+			
+			res.json(` The item ${noteId} has been deleted`);
+		});
+});
+
+
+    const readFromFile = util.promisify(fs.readFile);
+
+
+
+    const writeToFile = (destination, content) => {
+        fs.writeFile(destination, JSON.stringify(content, null, 4), (err) =>
+            err ? console.err(err) : console.info(`\nThe Data has been written to ${destination}`)
+        );
+    }
+
+    const readAndAppend = (content, file) => {
+        fs.readFile(file, 'utf-8', (err, data) =>{
+            if (err){
+                console.err (err);
+            } else {
+                const parsedData = JSON.parse(data);
+                parsedData.push(content);
+                writeToFile(file, parsedData);
+            }
+        });
+    };
+
+
+app.listen (PORT, () => console.log(`Listening Successfully On Port: (${PORT})`));
